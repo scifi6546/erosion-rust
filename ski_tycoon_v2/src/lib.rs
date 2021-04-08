@@ -8,7 +8,6 @@ mod grid;
 mod gui;
 mod lift;
 mod model;
-mod skiier;
 mod terrain;
 mod texture;
 mod utils;
@@ -51,7 +50,6 @@ pub mod prelude {
     pub use super::gui::{GuiModel, GuiRuntimeModel, GuiTransform};
     pub use super::lift::insert_lift;
     pub use super::model::Model;
-    pub use super::skiier::build_skiier;
     pub use super::terrain::Terrain;
     pub use super::texture::RGBATexture as Texture;
     pub use wasm_bindgen::prelude::JsValue;
@@ -241,7 +239,6 @@ impl Game {
             );
         }
         //game logic
-        skiier::follow_path(&mut self.world);
         {
             let lift: &mut lift::BuildLift = &mut self.resources.get_mut().unwrap();
             lift.build_lift(
@@ -259,7 +256,6 @@ impl Game {
         {
             let ctx: &mut egui::CtxRef = &mut self.resources.get_mut().unwrap();
             graph_debug::terrain_debug_window(&self.world, ctx);
-            skiier::draw_skiiers(&self.world, ctx);
         }
         schedule.execute(&mut self.world, &mut self.resources);
         {
