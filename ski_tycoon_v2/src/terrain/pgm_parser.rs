@@ -107,7 +107,7 @@ impl<'a> SkipWhitespace<'a> {
 }
 impl<'a> SkipWhitespace<'a> {
     fn is_white_space(c: &char) -> bool {
-        c == &'\n' || c == &' ' || c == &'\t'
+        c == &'\n' || c == &' ' || c == &'\t' || c == &'\r'
     }
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.iter.peek() {
@@ -206,51 +206,5 @@ mod test {
             ";
         let s_v: Vec<String> = SkipWhitespace::new(s).collect();
         assert_eq!(s_v, vec!["P2", "1", "1", "10000", "10000"]);
-    }
-
-    #[test]
-    fn basic_terrain() {
-        let terrain = terrain_from_pgm(
-            "P2
-    1 1
-    10000
-    10000
-            "
-            .to_string(),
-            TileType::Snow,
-        );
-        assert_eq!(
-            terrain,
-            Ok(Terrain::from_tiles(
-                vec![Tile {
-                    height: 10_000.0,
-                    tile_type: TileType::Snow
-                }],
-                Vector2::new(1, 1)
-            ))
-        );
-    }
-    #[test]
-    fn comment() {
-        let terrain = terrain_from_pgm(
-            "P2
-    1 1
-    #hello!
-    10000
-    10000
-            "
-            .to_string(),
-            TileType::Snow,
-        );
-        assert_eq!(
-            terrain,
-            Ok(Terrain::from_tiles(
-                vec![Tile {
-                    height: 10_000.0,
-                    tile_type: TileType::Snow
-                }],
-                Vector2::new(1, 1)
-            ))
-        );
     }
 }

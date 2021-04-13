@@ -9,7 +9,7 @@ use std::vec::Vec;
 /// ```
 #[derive(Clone, Debug)]
 pub struct Grid<T> {
-    data: Vec<T>,
+    pub data: Vec<T>,
     dimensions: Vector2<usize>,
 }
 impl<T> Grid<T> {
@@ -29,6 +29,12 @@ impl<T> Grid<T> {
                 None
             }
         }
+    }
+    pub fn get_unchecked(&self, index: Vector2<i64>) -> &T {
+        &self.data[index.x as usize * self.dimensions.y + index.y as usize]
+    }
+    pub fn get_mut_unchecked(&mut self, index: Vector2<i64>) -> &mut T {
+        &mut self.data[index.x as usize * self.dimensions.y + index.y as usize]
     }
     pub fn width(&self) -> usize {
         self.dimensions.x

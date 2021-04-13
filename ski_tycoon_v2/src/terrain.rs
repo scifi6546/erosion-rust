@@ -1,9 +1,10 @@
 use super::prelude::{
-    insert_terrain, AssetManager, Model, RenderingContext, RuntimeModel, ShaderBind, Transform,
+    insert_terrain, AssetManager, Grid, Model, RenderingContext, RuntimeModel, ShaderBind,
+    Transform,
 };
 use egui::CtxRef;
 use legion::World;
-use log::info;
+use log::{error, info};
 use nalgebra::{Vector2, Vector3};
 mod pgm_parser;
 pub struct TerrainLibrary {
@@ -121,7 +122,8 @@ pub struct Tile {
 }
 #[derive(Clone, Debug)]
 pub struct Terrain {
-    tiles: HeightVelocityField,
+    heights: Grid<f32>,
+    velocity: Grid<Vector2<f32>>,
     dimensions: Vector2<usize>,
 }
 impl Terrain {
@@ -133,27 +135,33 @@ impl Terrain {
         center_height: f32,
         slope: f32,
     ) -> Self {
-        let mut tiles = vec![];
-        tiles.reserve(dimensions.x * dimensions.y);
+        let mut heights = vec![];
+        heights.reserve(dimensions.x * dimensions.y);
         for x in 0..dimensions.x {
             for y in 0..dimensions.y {
                 let radius = ((x as f32 - center.x).powi(2) + (y as f32 - center.y).powi(2)).sqrt();
                 let height = center_height + radius * slope;
-                tiles.push(height);
+                heights.push(height);
             }
         }
         Self {
-            tiles: HeightVelocityField::from_heights(dimensions, tiles),
+            heights: Grid::from_vec(heights, dimensions),
+            velocity: Grid::from_vec(
+                vec![Vector2::new(0.0, 0.0); (dimensions.x + 1) * (dimensions.y + 1)],
+                dimensions,
+            ),
             dimensions,
         }
     }
 
     pub fn from_pgm(data: Vec<u8>, scaling: f32) -> Option<Self> {
         if let Ok(s) = String::from_utf8(data) {
-            if let Ok(t) = pgm_parser::terrain_from_pgm(s, TileType::Snow, scaling) {
-                Some(t)
-            } else {
-                None
+            match pgm_parser::terrain_from_pgm(s, TileType::Snow, scaling) {
+                Ok(t) => Some(t),
+                Err(e) => {
+                    error!("{:?}", e);
+                    None
+                }
             }
         } else {
             None
@@ -174,17 +182,57 @@ impl Terrain {
     }
     pub fn water_simulation(&mut self) {
         //Update Velocities
+        let mut new_velocities = self.velocity.clone();
+        for x in 0..self.dimensions.x {
+            for y in 0..self.dimensions.y {
+                let water_x_n1 = if x > 0 {
+                    self.heights
+                        .get_unchecked(Vector2::new(x as i64 - 1, y as i64))
+                } else {
+                    todo!()
+                };
+                let water_x_p1 = if x <= self.dimensions.x - 2 {
+                    self.heights
+                        .get_unchecked(Vector2::new(x as i64 + 1, y as i64))
+                } else {
+                    todo!()
+                };
+                let water_y_n1 = if y > 0 {
+                    self.heights
+                        .get_unchecked(Vector2::new(x as i64, y as i64 - 1))
+                } else {
+                    todo!()
+                };
+                let water_y_p1 = if y <= self.dimensions.y - 2 {
+                    self.heights
+                        .get_unchecked(Vector2::new(x as i64, y as i64 + 1))
+                } else {
+                    todo!()
+                };
+                let v = new_velocities.get_mut_unchecked(Vector2::new(x as i64, y as i64));
+                let center = self.heights.get_unchecked(Vector2::new(x as i64, y as i64));
+                v.x += (water_x_n1 - center) * Self::DELTA_T;
+                v.y += (water_y_p1 - center) * Self::DELTA_T;
+            }
+        }
         //Update Water
+        for x in 0..self.dimensions.x {
+            for y in 0..self.dimensions.y {}
+        }
     }
-    pub fn from_tiles(tiles: Vec<f32>, dimensions: Vector2<usize>) -> Self {
+    pub fn from_tiles(heights: Vec<f32>, dimensions: Vector2<usize>) -> Self {
         Self {
-            tiles: HeightVelocityField::from_heights(dimensions, tiles),
+            heights: Grid::from_vec(heights, dimensions),
+            velocity: Grid::from_vec(
+                vec![Vector2::new(0.0, 0.0); (dimensions.x + 1) * (dimensions.y + 1)],
+                dimensions,
+            ),
             dimensions,
         }
     }
 
     pub fn model(&self) -> Model {
-        let heights = self.tiles.heights.iter().copied().collect();
+        let heights = self.heights.data.iter().copied().collect();
         Model::from_heights(heights, self.dimensions, Transform::default())
     }
     pub fn get_transform_rounded(&self, coordinate: &Vector2<f32>) -> Vector3<f32> {
@@ -207,10 +255,10 @@ impl Terrain {
     }
     pub fn get_transform(&self, coordinate: &Vector2<i64>) -> Option<Vector3<f32>> {
         let pos = coordinate.x as usize * self.dimensions.y + coordinate.y as usize;
-        if pos < self.tiles.heights.len() {
+        if let Some(height) = self.heights.get(*coordinate) {
             Some(Vector3::new(
                 coordinate.x as f32,
-                self.tiles.heights[pos],
+                *height,
                 coordinate.y as f32,
             ))
         } else {
@@ -276,15 +324,6 @@ impl HeightVelocityField {
             x_minus,
             y_plus,
             y_minus,
-        }
-    }
-    pub fn map_velocities<F: Fn(&mut Bar)>(&mut self, f: F) {
-        //y velocities
-        for x in 0..self.dimensions.x {
-            for y in 0..self.dimensions.y {
-                let y_plus = self.heights[
-
-            }
         }
     }
 }
