@@ -1,4 +1,4 @@
-use super::{Terrain, Tile, TileType};
+use super::{Terrain, TileType};
 use nalgebra::Vector2;
 #[derive(PartialEq, Debug)]
 pub enum Context {
@@ -86,10 +86,7 @@ pub fn terrain_from_pgm(
                     error: height_string,
                 });
             };
-            tiles.push(Tile {
-                height: (height as f32) * y_scaling,
-                tile_type: default_tile_type.clone(),
-            });
+            tiles.push((height as f32) * y_scaling);
         }
     }
     Ok(Terrain::from_tiles(

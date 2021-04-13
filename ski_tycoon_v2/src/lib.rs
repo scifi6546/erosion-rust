@@ -1,12 +1,10 @@
 mod asset_manager;
 mod bindable;
 mod camera;
-mod graph;
 mod graphics_engine;
 mod graphics_system;
 mod grid;
 mod gui;
-mod lift;
 mod model;
 mod terrain;
 mod texture;
@@ -18,13 +16,13 @@ use graphics_engine::{
 };
 use log::{debug, info};
 use nalgebra::{Matrix4, Vector2, Vector3, Vector4};
+use terrain::Terrain;
 use texture::RGBATexture;
 mod events;
 use asset_manager::AssetManager;
 use bindable::Bindable;
 use camera::DeltaCamera;
 use events::{Event, MouseButton};
-use graph::graph_debug;
 //
 use graphics_system::{GraphicsSettings, RuntimeModel};
 use gui::GuiModel;
@@ -34,10 +32,6 @@ pub mod prelude {
     pub use super::asset_manager::AssetManager;
     pub use super::camera::DeltaCamera;
     pub use super::events::{Event, MouseButton};
-    pub use super::graph::{
-        a_star, dijkstra, FollowPath, GraphLayer, GraphLayerList, GraphWeight, GridNode, LiftLayer,
-        Node, NodeFloat, Path,
-    };
     pub use super::graphics_engine::{
         ErrorType, Framebuffer, ItemDesc, Mesh, RenderingContext, RuntimeMesh, RuntimeTexture,
         Shader, Transform, Vertex,
@@ -48,7 +42,6 @@ pub mod prelude {
     };
     pub use super::grid::Grid;
     pub use super::gui::{GuiModel, GuiRuntimeModel, GuiTransform};
-    pub use super::lift::insert_lift;
     pub use super::model::Model;
     pub use super::terrain::Terrain;
     pub use super::texture::RGBATexture as Texture;
@@ -132,7 +125,6 @@ impl Game {
         resources.insert(egui_context);
         resources.insert(egui_adaptor);
         resources.insert(model_manager);
-        resources.insert(lift::BuildLift::default());
         resources.insert(terrain::TerrainLibrary::default());
         // gui::insert_ui(&mut egui_context);
         let g = Game {
@@ -227,6 +219,21 @@ impl Game {
             shader.bind("world");
             gl.bind_shader(shader.get_bind()).ok().unwrap();
         }
+        {
+            let asset_manager: &mut AssetManager<RuntimeModel> =
+                &mut self.resources.get_mut().unwrap();
+            let shader: &mut ShaderBind = &mut self.resources.get_mut().unwrap();
+            let graphics: &mut RenderingContext = &mut self.resources.get_mut().unwrap();
+
+            for terrain in <&mut Terrain>::query().iter_mut(&mut self.world) {
+                terrain.water_simulation();
+                let model = terrain.model();
+                asset_manager.overwrite(
+                    "game_terrain",
+                    RuntimeModel::new(&model, graphics, shader.get_bind()).expect("created model"),
+                );
+            }
+        }
         info!("handled sceen resize");
         {
             let library: &terrain::TerrainLibrary = &self.resources.get().unwrap();
@@ -239,24 +246,10 @@ impl Game {
             );
         }
         //game logic
-        {
-            let lift: &mut lift::BuildLift = &mut self.resources.get_mut().unwrap();
-            lift.build_lift(
-                &mut self.world,
-                &mut self.resources.get_mut().unwrap(),
-                &mut self.resources.get_mut().unwrap(),
-                &mut self.resources.get_mut().unwrap(),
-                &self.resources.get().unwrap(),
-            );
-        }
         //rendering susten
         let mut schedule = Schedule::builder()
             .add_system(graphics_system::render_object_system())
             .build();
-        {
-            let ctx: &mut egui::CtxRef = &mut self.resources.get_mut().unwrap();
-            graph_debug::terrain_debug_window(&self.world, ctx);
-        }
         schedule.execute(&mut self.world, &mut self.resources);
         {
             let gl: &mut RenderingContext = &mut self.resources.get_mut().unwrap();

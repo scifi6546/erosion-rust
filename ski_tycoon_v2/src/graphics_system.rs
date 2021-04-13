@@ -60,7 +60,6 @@ pub fn insert_terrain(
         RuntimeModel::new(&model, graphics, bound_shader).expect("created model"),
     );
     world.push((
-        terrain.build_graph(),
         terrain,
         transform,
         RuntimeModelId {

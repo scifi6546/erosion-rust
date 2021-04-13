@@ -1,6 +1,5 @@
 use super::prelude::{
-    insert_terrain, AssetManager, GraphLayer, GraphWeight, Grid, GridNode, Model, RenderingContext,
-    RuntimeModel, ShaderBind, Transform,
+    insert_terrain, AssetManager, Model, RenderingContext, RuntimeModel, ShaderBind, Transform,
 };
 use egui::CtxRef;
 use legion::World;
@@ -120,12 +119,13 @@ pub struct Tile {
     pub height: f32,
     pub tile_type: TileType,
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Terrain {
-    tiles: Vec<Tile>,
+    tiles: HeightVelocityField,
     dimensions: Vector2<usize>,
 }
 impl Terrain {
+    const DELTA_T: f32 = 1.0;
     /// Builds cone terrain with centar at center and slope of `slope`
     pub fn new_cone(
         dimensions: Vector2<usize>,
@@ -139,13 +139,13 @@ impl Terrain {
             for y in 0..dimensions.y {
                 let radius = ((x as f32 - center.x).powi(2) + (y as f32 - center.y).powi(2)).sqrt();
                 let height = center_height + radius * slope;
-                tiles.push(Tile {
-                    height,
-                    tile_type: TileType::Snow,
-                });
+                tiles.push(height);
             }
         }
-        Self { tiles, dimensions }
+        Self {
+            tiles: HeightVelocityField::from_heights(dimensions, tiles),
+            dimensions,
+        }
     }
 
     pub fn from_pgm(data: Vec<u8>, scaling: f32) -> Option<Self> {
@@ -159,12 +159,32 @@ impl Terrain {
             None
         }
     }
-    pub fn from_tiles(tiles: Vec<Tile>, dimensions: Vector2<usize>) -> Self {
-        Self { tiles, dimensions }
+    fn get_index(&self, x: i32, y: i32) -> usize {
+        let x = if x < 0 {
+            self.dimensions.x - 1
+        } else {
+            x as usize % self.dimensions.x
+        };
+        let y = if y < 0 {
+            self.dimensions.y - 1
+        } else {
+            y as usize % self.dimensions.y
+        };
+        x * self.dimensions.y + y
+    }
+    pub fn water_simulation(&mut self) {
+        //Update Velocities
+        //Update Water
+    }
+    pub fn from_tiles(tiles: Vec<f32>, dimensions: Vector2<usize>) -> Self {
+        Self {
+            tiles: HeightVelocityField::from_heights(dimensions, tiles),
+            dimensions,
+        }
     }
 
     pub fn model(&self) -> Model {
-        let heights = self.tiles.iter().map(|t| t.height).collect();
+        let heights = self.tiles.heights.iter().copied().collect();
         Model::from_heights(heights, self.dimensions, Transform::default())
     }
     pub fn get_transform_rounded(&self, coordinate: &Vector2<f32>) -> Vector3<f32> {
@@ -187,68 +207,84 @@ impl Terrain {
     }
     pub fn get_transform(&self, coordinate: &Vector2<i64>) -> Option<Vector3<f32>> {
         let pos = coordinate.x as usize * self.dimensions.y + coordinate.y as usize;
-        if pos < self.tiles.len() {
+        if pos < self.tiles.heights.len() {
             Some(Vector3::new(
                 coordinate.x as f32,
-                self.tiles[pos].height,
+                self.tiles.heights[pos],
                 coordinate.y as f32,
             ))
         } else {
             None
         }
     }
-    fn get_weight(&self, start: Vector2<i64>, end: Vector2<i64>) -> GraphWeight {
-        if end.x >= self.dimensions.x as i64
-            || end.x < 0
-            || end.y >= self.dimensions.y as i64
-            || end.y < 0
-            || start.x >= self.dimensions.x as i64
-            || start.x < 0
-            || start.y >= self.dimensions.y as i64
-            || start.y < 0
-        {
-            GraphWeight::Infinity
-        } else {
-            let start_tile = &self.tiles[start.x as usize * self.dimensions.y + start.y as usize];
-            let end_tile = &self.tiles[end.x as usize * self.dimensions.y + end.y as usize];
-            let delta_height = start_tile.height - end_tile.height;
-            if delta_height as i32 >= 0 {
-                GraphWeight::Some((delta_height * 100.0).abs() as i32)
-            } else {
-                GraphWeight::Some((delta_height * 10.0).abs() as i32)
-            }
+}
+
+#[derive(Clone, Debug)]
+struct HeightVelocityField {
+    dimensions: Vector2<usize>,
+    velocities: Vec<f32>,
+    heights: Vec<f32>,
+}
+struct VelocitiesOut {
+    x_plus: f32,
+    x_minus: f32,
+    y_plus: f32,
+    y_minus: f32,
+}
+
+struct Bar {}
+impl HeightVelocityField {
+    pub fn from_heights(dimensions: Vector2<usize>, heights: Vec<f32>) -> Self {
+        assert_eq!(heights.len(), dimensions.x * dimensions.y);
+        let velocities = vec![0.0; dimensions.x * dimensions.y - (dimensions.y + 1) / 2];
+        Self {
+            dimensions,
+            velocities,
+            heights,
         }
     }
-    pub fn build_graph(&self) -> GraphLayer {
-        let mut data = vec![];
-        data.reserve(self.dimensions.x * self.dimensions.y);
+    pub fn get_height(&self, cord: Vector2<usize>) -> f32 {
+        self.heights[cord.x * self.dimensions.y + cord.y]
+    }
+    /// Gets flow going from start.
+    /// Sign convention: positive if start is losing material to end
+    pub fn get_velocities(&self, cord: Vector2<usize>) -> VelocitiesOut {
+        let x_plus = self.velocities[if cord.x < self.dimensions.x - 1 {
+            (cord.x * 2 + 1) * self.dimensions.y * 2 + cord.y - self.dimensions.x
+        } else {
+            todo!()
+        }];
+        let x_minus = -1.0
+            * self.velocities[if cord.x > 0 {
+                (cord.x * 2 - 1) * self.dimensions.y * 2 + cord.y - self.dimensions.x
+            } else {
+                todo!()
+            }];
+        let y_plus = self.velocities[if cord.y < self.dimensions.y - 1 {
+            (cord.x * 2) * self.dimensions.y * 2 + cord.y + 1 - self.dimensions.x
+        } else {
+            todo!()
+        }];
+        let y_minus = -1.0
+            * self.heights[if cord.y > 0 {
+                (cord.x * 2) * self.dimensions.y * 2 + cord.y - 1 - self.dimensions.x
+            } else {
+                todo!()
+            }];
+        VelocitiesOut {
+            x_plus,
+            x_minus,
+            y_plus,
+            y_minus,
+        }
+    }
+    pub fn map_velocities<F: Fn(&mut Bar)>(&mut self, f: F) {
+        //y velocities
         for x in 0..self.dimensions.x {
             for y in 0..self.dimensions.y {
-                let x_plus = self.get_weight(
-                    Vector2::new(x as i64, y as i64),
-                    Vector2::new(x as i64 + 1, y as i64),
-                );
-                let x_minus = self.get_weight(
-                    Vector2::new(x as i64, y as i64),
-                    Vector2::new(x as i64 - 1, y as i64),
-                );
-                let z_plus = self.get_weight(
-                    Vector2::new(x as i64, y as i64),
-                    Vector2::new(x as i64, y as i64 + 1),
-                );
-                let z_minus = self.get_weight(
-                    Vector2::new(x as i64, y as i64),
-                    Vector2::new(x as i64, y as i64 + 1),
-                );
-                data.push(GridNode {
-                    x_plus,
-                    x_minus,
-                    z_plus,
-                    z_minus,
-                });
+                let y_plus = self.heights[
+
             }
         }
-        let grid = Grid::from_vec(data, self.dimensions);
-        GraphLayer::Grid { grid }
     }
 }
