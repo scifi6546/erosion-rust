@@ -82,8 +82,8 @@ document.getElementById("canvas").onresize = resize;
 document.onkeypress = press_putton;
 document.getElementById("canvas").onmousedown = on_mouse_down;
 document.getElementById("canvas").onmouseup = on_mouse_up;
-SCREEN_X_SIZE = window.innerWidth;
-SCREEN_Y_SIZE = window.innerHeight;
+SCREEN_X_SIZE = document.getElementById("canvas").width;
+SCREEN_Y_SIZE = document.getElementById("canvas").height;
 document.getElementById("canvas").width = SCREEN_X_SIZE;
 document.getElementById("canvas").height = SCREEN_Y_SIZE;
 console.log("loading game")
@@ -96,8 +96,8 @@ console.log(window);
 console.log("loaded game")
 function render() {
 
-    let new_x_size = window.innerWidth;
-    let new_y_size = window.innerHeight;
+    let new_x_size = SCREEN_X_SIZE;
+    let new_y_size = SCREEN_Y_SIZE;
     if (new_x_size != SCREEN_X_SIZE || new_y_size != SCREEN_Y_SIZE) {
         console.log("screen updated");
         console.log(new_x_size);

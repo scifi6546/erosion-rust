@@ -1,4 +1,4 @@
-use super::{Terrain, TileType};
+use super::Terrain;
 use nalgebra::Vector2;
 #[derive(PartialEq, Debug)]
 pub enum Context {
@@ -17,11 +17,7 @@ pub enum ParseError {
     MissingMaxHeight,
     MissingDatapoint,
 }
-pub fn terrain_from_pgm(
-    data: String,
-    default_tile_type: TileType,
-    y_scaling: f32,
-) -> Result<Terrain, ParseError> {
+pub fn terrain_from_pgm(data: String, y_scaling: f32) -> Result<Terrain, ParseError> {
     let mut iter = SkipWhitespace::new(data.as_str());
     if let Some(magic_number) = iter.next() {
         if magic_number != "P2" {
@@ -171,9 +167,8 @@ impl<'a> Iterator for SkipWhitespace<'a> {
 }
 #[cfg(test)]
 mod test {
-    use super::super::{Terrain, Tile, TileType};
     use super::*;
-    use nalgebra::Vector2;
+
     #[test]
     fn test_iterator() {
         let s = "s\ns2\n s3\n#do not read\ns4";

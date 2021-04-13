@@ -111,14 +111,10 @@ impl TerrainLibrary {
         });
     }
 }
-#[derive(Clone, Debug, PartialEq)]
-pub enum TileType {
-    Snow,
-}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tile {
     pub height: f32,
-    pub tile_type: TileType,
 }
 
 pub struct Terrain {
@@ -157,7 +153,7 @@ impl Terrain {
 
     pub fn from_pgm(data: Vec<u8>, scaling: f32) -> Option<Self> {
         if let Ok(s) = String::from_utf8(data) {
-            match pgm_parser::terrain_from_pgm(s, TileType::Snow, scaling) {
+            match pgm_parser::terrain_from_pgm(s, scaling) {
                 Ok(t) => Some(t),
                 Err(e) => {
                     error!("{:?}", e);
@@ -167,19 +163,6 @@ impl Terrain {
         } else {
             None
         }
-    }
-    fn get_index(&self, x: i32, y: i32) -> usize {
-        let x = if x < 0 {
-            self.dimensions.x - 1
-        } else {
-            x as usize % self.dimensions.x
-        };
-        let y = if y < 0 {
-            self.dimensions.y - 1
-        } else {
-            y as usize % self.dimensions.y
-        };
-        x * self.dimensions.y + y
     }
     pub fn water_simulation(&mut self) {
         //Update Velocities
@@ -314,7 +297,7 @@ impl Terrain {
             heights: Grid::from_vec(heights, dimensions),
             velocity: Grid::from_vec(
                 vec![Vector2::new(0.0, 0.0); (dimensions.x + 1) * (dimensions.y + 1)],
-                dimensions,
+                Vector2::new(dimensions.x + 1, dimensions.y + 1),
             ),
             dimensions,
         }
@@ -343,7 +326,6 @@ impl Terrain {
         .unwrap()
     }
     pub fn get_transform(&self, coordinate: &Vector2<i64>) -> Option<Vector3<f32>> {
-        let pos = coordinate.x as usize * self.dimensions.y + coordinate.y as usize;
         if let Some(height) = self.heights.get(*coordinate) {
             Some(Vector3::new(
                 coordinate.x as f32,
@@ -352,67 +334,6 @@ impl Terrain {
             ))
         } else {
             None
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-struct HeightVelocityField {
-    dimensions: Vector2<usize>,
-    velocities: Vec<f32>,
-    heights: Vec<f32>,
-}
-struct VelocitiesOut {
-    x_plus: f32,
-    x_minus: f32,
-    y_plus: f32,
-    y_minus: f32,
-}
-
-struct Bar {}
-impl HeightVelocityField {
-    pub fn from_heights(dimensions: Vector2<usize>, heights: Vec<f32>) -> Self {
-        assert_eq!(heights.len(), dimensions.x * dimensions.y);
-        let velocities = vec![0.0; dimensions.x * dimensions.y - (dimensions.y + 1) / 2];
-        Self {
-            dimensions,
-            velocities,
-            heights,
-        }
-    }
-    pub fn get_height(&self, cord: Vector2<usize>) -> f32 {
-        self.heights[cord.x * self.dimensions.y + cord.y]
-    }
-    /// Gets flow going from start.
-    /// Sign convention: positive if start is losing material to end
-    pub fn get_velocities(&self, cord: Vector2<usize>) -> VelocitiesOut {
-        let x_plus = self.velocities[if cord.x < self.dimensions.x - 1 {
-            (cord.x * 2 + 1) * self.dimensions.y * 2 + cord.y - self.dimensions.x
-        } else {
-            todo!()
-        }];
-        let x_minus = -1.0
-            * self.velocities[if cord.x > 0 {
-                (cord.x * 2 - 1) * self.dimensions.y * 2 + cord.y - self.dimensions.x
-            } else {
-                todo!()
-            }];
-        let y_plus = self.velocities[if cord.y < self.dimensions.y - 1 {
-            (cord.x * 2) * self.dimensions.y * 2 + cord.y + 1 - self.dimensions.x
-        } else {
-            todo!()
-        }];
-        let y_minus = -1.0
-            * self.heights[if cord.y > 0 {
-                (cord.x * 2) * self.dimensions.y * 2 + cord.y - 1 - self.dimensions.x
-            } else {
-                todo!()
-            }];
-        VelocitiesOut {
-            x_plus,
-            x_minus,
-            y_plus,
-            y_minus,
         }
     }
 }
