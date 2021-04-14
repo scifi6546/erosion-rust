@@ -32,6 +32,16 @@ impl Default for TerrainLibrary {
                     }),
                 },
                 Scenario {
+                    name: "Flat".to_string(),
+                    terrain_ctor: Box::new(|| Terrain::flat(Vector2::new(20, 20), 1.0)),
+                },
+                Scenario {
+                    name: "Droplet".to_string(),
+                    terrain_ctor: Box::new(|| {
+                        Terrain::droplet(Vector2::new(20, 20), 1.0, Vector2::new(10, 10), 2.0)
+                    }),
+                },
+                Scenario {
                     name: "Toture Test".to_string(),
                     terrain_ctor: Box::new(|| {
                         Terrain::new_cone(
@@ -141,6 +151,35 @@ impl Terrain {
                 heights.push(height);
             }
         }
+        Self {
+            heights: Grid::from_vec(heights, dimensions),
+            velocity: Grid::from_vec(
+                vec![Vector2::new(0.0, 0.0); (dimensions.x + 1) * (dimensions.y + 1)],
+                Vector2::new(dimensions.x + 1, dimensions.y + 1),
+            ),
+            dimensions,
+        }
+    }
+    pub fn flat(dimensions: Vector2<usize>, height: f32) -> Self {
+        Self {
+            heights: Grid::from_vec(vec![height; dimensions.x * dimensions.y], dimensions),
+            velocity: Grid::from_vec(
+                vec![Vector2::new(0.0, 0.0); (dimensions.x + 1) * (dimensions.y + 1)],
+                Vector2::new(dimensions.x + 1, dimensions.y + 1),
+            ),
+            dimensions,
+        }
+    }
+
+    pub fn droplet(
+        dimensions: Vector2<usize>,
+        height: f32,
+        droplet_pos: Vector2<usize>,
+        droplet_height: f32,
+    ) -> Self {
+        let mut heights = vec![height; dimensions.x * dimensions.y];
+        heights[droplet_pos.x * dimensions.y + droplet_pos.y] = droplet_height;
+
         Self {
             heights: Grid::from_vec(heights, dimensions),
             velocity: Grid::from_vec(
