@@ -1,4 +1,10 @@
 import * as rust from "rust";
+document.onreadystatechange = () => {
+	console.log("changed");
+  if (document.readyState === 'complete') {
+    console.log('DOM is ready.')
+  }
+};
 let last_x = null;
 let last_y = null;
 let last_time = new Date();
@@ -6,6 +12,7 @@ let wheel_last_time = new Date();
 let events = []
 let SCREEN_X_SIZE = 0;
 let SCREEN_Y_SIZE = 0;
+console.log(document);
 function canvas_click() {
     console.log("clicked??")
     //document.getElementById("canvas").requestPointerLock();
@@ -23,16 +30,16 @@ function mouse_move(event) {
         last_y = event.clientY;
     }
     mouse_event.set("name", "mouse_move");
-    mouse_event.set("delta_x", event.clientX - last_x);
-    mouse_event.set("x", event.clientX);
-    mouse_event.set("delta_y", event.clientY - last_y);
-    mouse_event.set("y", event.clientY);
+    mouse_event.set("delta_x", event.offsetX - last_x);
+    mouse_event.set("x", event.offsetX);
+    mouse_event.set("delta_y", event.offsetY - last_y);
+    mouse_event.set("y", event.offsetY);
 
     mouse_event.set("delta_time_ms", Number(now - last_time))
     mouse_event.set("buttons", event.buttons);
     events.push(mouse_event)
-    last_x = event.clientX;
-    last_y = event.clientY;
+    last_x = event.offsetX;
+    last_y = event.offsetY;
     last_time = now;
 }
 function onwheel(event) {
@@ -82,6 +89,10 @@ document.getElementById("canvas").onresize = resize;
 document.onkeypress = press_putton;
 document.getElementById("canvas").onmousedown = on_mouse_down;
 document.getElementById("canvas").onmouseup = on_mouse_up;
+//let c = document.getElementById("canvas");
+console.log(document.getElementById("game_body").offsetWidth);
+//c.width = document.getElementById("game_body").innerWidth;
+//console.log(c.width);
 SCREEN_X_SIZE = document.getElementById("canvas").width;
 SCREEN_Y_SIZE = document.getElementById("canvas").height;
 document.getElementById("canvas").width = SCREEN_X_SIZE;
@@ -94,6 +105,8 @@ resolution_map.set("y", SCREEN_Y_SIZE);
 let game = rust.init_game(resolution_map);
 console.log(window);
 console.log("loaded game")
+
+
 function render() {
 
     let new_x_size = SCREEN_X_SIZE;
