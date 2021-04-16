@@ -226,6 +226,7 @@ impl Game {
             let graphics: &mut RenderingContext = &mut self.resources.get_mut().unwrap();
 
             for terrain in <&mut Terrain>::query().iter_mut(&mut self.world) {
+                terrain.draw_gui(&mut self.resources.get_mut().unwrap());
                 terrain.water_simulation();
                 let model = terrain.model();
                 asset_manager.overwrite(

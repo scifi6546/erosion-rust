@@ -35,7 +35,11 @@
     Below is a real time simulation of the shallow water equations. It only uses the first equation (which describes the
     conservation of mass) in order to simulate
     water.
-    The simulation operates on two steps. In the first step the water velocities are calculated and then the
+    The simulation operates on two steps. In the first step the water velocities are calculated and then the water
+    velocities are used to change the water heights. The equations used in the simulation are shown below.
+
+    <img src="equation2.png">
+    The first two equations describe the velocity and the last two describe how the velocity is related to the height.
     <div class="game_body" id="game_body">
         <canvas id="canvas" class="game" width="1000" height="1000">
     </div>

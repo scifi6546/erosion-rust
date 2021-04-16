@@ -38,7 +38,7 @@ impl Default for TerrainLibrary {
                 Scenario {
                     name: "Droplet".to_string(),
                     terrain_ctor: Box::new(|| {
-                        Terrain::droplet(Vector2::new(20, 20), 1.0, Vector2::new(10, 10), 2.0)
+                        Terrain::droplet(Vector2::new(20, 20), 1.0, Vector2::new(10, 10), 6.0)
                     }),
                 },
                 Scenario {
@@ -135,6 +135,7 @@ pub struct Terrain {
 
 impl Terrain {
     const DELTA_T: f32 = 0.001;
+    pub fn draw_gui(&self, context: &mut CtxRef) {}
     /// Builds cone terrain with centar at center and slope of `slope`
     pub fn new_cone(
         dimensions: Vector2<usize>,
@@ -236,7 +237,7 @@ impl Terrain {
                 let v = new_velocities.get_mut_unchecked(Vector2::new(x as i64, y as i64));
                 let center = self.heights.get_unchecked(Vector2::new(x as i64, y as i64));
                 v.x += (water_x_n1 - center) * Self::DELTA_T;
-                v.y += (water_y_p1 - center) * Self::DELTA_T;
+                v.y += (water_y_n1 - center) * Self::DELTA_T;
             }
         }
         self.velocity = new_velocities;
