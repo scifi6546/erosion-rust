@@ -1,9 +1,9 @@
 import * as rust from "rust";
 document.onreadystatechange = () => {
-	console.log("changed");
-  if (document.readyState === 'complete') {
-    console.log('DOM is ready.')
-  }
+    console.log("changed");
+    if (document.readyState === 'complete') {
+        console.log('DOM is ready.')
+    }
 };
 let last_x = null;
 let last_y = null;
@@ -90,7 +90,7 @@ document.onkeypress = press_putton;
 document.getElementById("canvas").onmousedown = on_mouse_down;
 document.getElementById("canvas").onmouseup = on_mouse_up;
 //let c = document.getElementById("canvas");
-console.log(document.getElementById("game_body").offsetWidth);
+
 //c.width = document.getElementById("game_body").innerWidth;
 //console.log(c.width);
 SCREEN_X_SIZE = document.getElementById("canvas").width;

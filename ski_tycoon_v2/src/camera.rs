@@ -53,15 +53,15 @@ impl DeltaCamera {
     /// applies delta changes to self
     pub fn apply(&mut self, world: &World) {
         if let Some(next) = self.next.as_ref() {
-            let terrain = <&Terrain>::query().iter(world).next().unwrap();
-
-            self.previous = next.clone();
-            self.previous.origin.y = terrain
-                .get_transform_rounded(&Vector2::new(
-                    self.previous.origin.x,
-                    self.previous.origin.z,
-                ))
-                .y;
+            if let Some(terrain) = <&Terrain>::query().iter(world).next() {
+                self.previous = next.clone();
+                self.previous.origin.y = terrain
+                    .get_transform_rounded(&Vector2::new(
+                        self.previous.origin.x,
+                        self.previous.origin.z,
+                    ))
+                    .y;
+            }
         }
         self.next = None;
     }
