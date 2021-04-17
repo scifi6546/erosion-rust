@@ -205,6 +205,7 @@ impl Terrain {
             None
         }
     }
+    fn run_timestep(velocity: &mut Grid<Vector2<f32>>, dimensions: &mut Vector2<usize>) {}
     pub fn water_simulation(&mut self) {
         //Update Velocities
         let mut new_velocities = self.velocity.clone();
