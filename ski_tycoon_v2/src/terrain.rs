@@ -15,62 +15,47 @@ impl Default for TerrainLibrary {
         Self {
             entries: vec![
                 Scenario {
-                    name: "Cone World".to_string(),
-                    terrain_ctor: Box::new(|| {
-                        Terrain::new_cone(
-                            Vector2::new(20, 20),
-                            Vector2::new(10.0, 10.0),
-                            10.0,
-                            -1.0,
-                        )
-                    }),
-                },
-                Scenario {
-                    name: "Small Cone World".to_string(),
-                    terrain_ctor: Box::new(|| {
-                        Terrain::new_cone(Vector2::new(5, 5), Vector2::new(10.0, 10.0), 10.0, 1.0)
-                    }),
-                },
-                Scenario {
                     name: "Flat".to_string(),
                     terrain_ctor: Box::new(|| Terrain::flat(Vector2::new(20, 20), 1.0)),
                 },
                 Scenario {
                     name: "Droplet".to_string(),
                     terrain_ctor: Box::new(|| {
-                        Terrain::droplet(Vector2::new(20, 20), 1.0, Vector2::new(10, 10), 6.0)
-                    }),
-                },
-                Scenario {
-                    name: "Toture Test".to_string(),
-                    terrain_ctor: Box::new(|| {
-                        Terrain::new_cone(
-                            Vector2::new(100, 100),
-                            Vector2::new(50.0, 50.0),
-                            50.0,
-                            -1.0,
+                        Terrain::droplet(
+                            Vector2::new(20, 20),
+                            1.0,
+                            vec![Droplet {
+                                position: Vector2::new(10, 10),
+                                height: 6.0,
+                            }],
                         )
                     }),
                 },
                 Scenario {
-                    name: "PGM File".to_string(),
+                    name: "Many Droplets".to_string(),
                     terrain_ctor: Box::new(|| {
-                        Terrain::from_pgm(include_bytes!("heightmaps/output.pgm").to_vec(), 0.01)
-                            .unwrap()
-                    }),
-                },
-                Scenario {
-                    name: "PGM File No Skiiers".to_string(),
-                    terrain_ctor: Box::new(|| {
-                        Terrain::from_pgm(include_bytes!("heightmaps/output.pgm").to_vec(), 0.01)
-                            .unwrap()
-                    }),
-                },
-                Scenario {
-                    name: "Volcano".to_string(),
-                    terrain_ctor: Box::new(|| {
-                        Terrain::from_pgm(include_bytes!("heightmaps/cone.pgm").to_vec(), 0.001)
-                            .unwrap()
+                        Terrain::droplet(
+                            Vector2::new(50, 50),
+                            1.0,
+                            vec![
+                                Droplet {
+                                    position: Vector2::new(10, 10),
+                                    height: 6.0,
+                                },
+                                Droplet {
+                                    position: Vector2::new(20, 20),
+                                    height: 6.0,
+                                },
+                                Droplet {
+                                    position: Vector2::new(0, 10),
+                                    height: 6.0,
+                                },
+                                Droplet {
+                                    position: Vector2::new(23, 28),
+                                    height: 6.0,
+                                },
+                            ],
+                        )
                     }),
                 },
             ],
@@ -132,9 +117,12 @@ pub struct Terrain {
     velocity: Grid<Vector2<f32>>,
     dimensions: Vector2<usize>,
 }
-
+pub struct Droplet {
+    position: Vector2<usize>,
+    height: f32,
+}
 impl Terrain {
-    const DELTA_T: f32 = 0.001;
+    const DELTA_T: f32 = 0.01;
     pub fn draw_gui(&self, context: &mut CtxRef) {}
     /// Builds cone terrain with centar at center and slope of `slope`
     pub fn new_cone(
@@ -172,14 +160,11 @@ impl Terrain {
         }
     }
 
-    pub fn droplet(
-        dimensions: Vector2<usize>,
-        height: f32,
-        droplet_pos: Vector2<usize>,
-        droplet_height: f32,
-    ) -> Self {
+    pub fn droplet(dimensions: Vector2<usize>, height: f32, droplet: Vec<Droplet>) -> Self {
         let mut heights = vec![height; dimensions.x * dimensions.y];
-        heights[droplet_pos.x * dimensions.y + droplet_pos.y] = droplet_height;
+        for drop in droplet.iter() {
+            heights[drop.position.x * dimensions.y + drop.position.y] = drop.height;
+        }
 
         Self {
             heights: Grid::from_vec(heights, dimensions),

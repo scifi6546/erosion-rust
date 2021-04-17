@@ -213,7 +213,7 @@ impl Game {
 
             let gl: &mut RenderingContext = &mut self.resources.get_mut().unwrap();
             gl.bind_framebuffer(&self.world_framebuffer);
-            gl.clear_screen(Vector4::new(0.2, 0.2, 0.2, 1.0));
+            gl.clear_screen(Vector4::new(1.0, 1.0, 1.0, 1.0));
 
             let shader: &mut ShaderBind = &mut self.resources.get_mut().unwrap();
             shader.bind("world");

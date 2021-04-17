@@ -44,6 +44,7 @@
             margin-left: auto;
             margin-right: auto;
             display: block;
+            box-shadow: 0px 0px 10px;
         }
     </style>
     <meta charset="utf-8">
@@ -68,7 +69,7 @@
             <h1>
                 Simulation
             </h1>
-            Below is a real time simulation of the shallow water equations. It only uses the first equation (which
+            Shown below is a real time simulation of the shallow water equations. It only uses the first equation (which
             describes
             the
             conservation of mass) in order to simulate
@@ -76,15 +77,16 @@
             The simulation operates on two steps. In the first step the water velocities are calculated and then the
             water
             velocities are used to change the water heights. The equations used in the simulation are shown below.
+            <div class="img">
+                <img src="equation2.png">
+            </div>
             <h1>
                 Limitations of Model
             </h1>
             the model does not incorporate the conservation of momentum as described in the shallow water equations. The
             model
             also breaks down under high water velocities because it uses a constant time step.
-            <div class="img">
-                <img src="equation2.png">
-            </div>
+
             The first two equations describe the velocity and the last two describe how the velocity is related to the
             height.
         </div>

@@ -124,7 +124,7 @@ impl Model {
                 vertices: vertices.iter().map(|v| v.data.clone()).flatten().collect(),
                 description: ItemDesc::default_model(),
             },
-            texture: Texture::constant_color(Vector4::new(200, 200, 200, 255), Vector2::new(8, 8)),
+            texture: Texture::constant_color(Vector4::new(32, 65, 147, 255), Vector2::new(8, 8)),
             transform,
         }
     }
