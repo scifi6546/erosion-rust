@@ -54,6 +54,18 @@ impl Default for TerrainLibrary {
                                     position: Vector2::new(23, 28),
                                     height: 6.0,
                                 },
+                                Droplet {
+                                    position: Vector2::new(43, 38),
+                                    height: 6.0,
+                                },
+                                Droplet {
+                                    position: Vector2::new(33, 8),
+                                    height: 6.0,
+                                },
+                                Droplet {
+                                    position: Vector2::new(2, 44),
+                                    height: 6.0,
+                                },
                             ],
                         )
                     }),
@@ -96,6 +108,10 @@ impl TerrainLibrary {
         asset_manager: &mut AssetManager<RuntimeModel>,
         bound_shader: &ShaderBind,
     ) {
+        egui::Window::new("How do I use this?").show(context, |ui| {
+
+            ui.label("First click on a scenario to start a simulation.\nScroll to zoom out and use left click+drag to change view.");
+        });
         egui::Window::new("Scenarios").show(context, |ui| {
             for t in self.entries.iter() {
                 ui.label(t.name.to_string());

@@ -8,7 +8,7 @@
             display: flex;
             justify-content: center;
             background-color: #b9b9b9;
-
+            font-family: 'Helvetica';
         }
 
         .game_body {
@@ -48,7 +48,7 @@
         }
     </style>
     <meta charset="utf-8">
-    <title>Hello wasm-pack!</title>
+    <title>Shallow Water Equations!</title>
 </head>
 
 <body>
@@ -77,18 +77,21 @@
             The simulation operates on two steps. In the first step the water velocities are calculated and then the
             water
             velocities are used to change the water heights. The equations used in the simulation are shown below.
+            The first two equations describe the velocity and the last two describe how the velocity is related to the
+            height.
             <div class="img">
                 <img src="equation2.png">
             </div>
             <h1>
                 Limitations of Model
             </h1>
-            the model does not incorporate the conservation of momentum as described in the shallow water equations. The
+            The model does not incorporate the conservation of momentum as described in the shallow water equations. The
             model
-            also breaks down under high water velocities because it uses a constant time step.
+            also breaks down. One explanation could be that under high water velocities the model transfers to much
+            water leading to erronous results.
+            Another explanation could be that the model does not simulate viscosity resulting in undamped oscilations.
 
-            The first two equations describe the velocity and the last two describe how the velocity is related to the
-            height.
+
         </div>
         <div class="game_body"><canvas id="canvas" class="game" width="1000" height="1000"></canvas></div>
 
@@ -100,6 +103,16 @@
         <noscript>This page contains webassembly and javascript content, please enable javascript in your
             browser.</noscript>
         <script src="./bootstrap.js"></script>
+        <div class="text">
+
+            <h1>Refrences</h1>
+            <a
+                href="https://users.oden.utexas.edu/~arbogast/cam397/dawson_v2.pdf">https://users.oden.utexas.edu/~arbogast/cam397/dawson_v2.pdf</a>
+            <h3>Source Code (Contains references to libraries used) </h1>
+                <a href="https://github.com/scifi6546/erosion-rust">https://github.com/scifi6546/erosion-rust</a>
+
+        </div>
+
     </div>
 </body>
 
