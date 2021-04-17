@@ -11,7 +11,10 @@
 
         }
 
-        .game_body {}
+        .game_body {
+            display: block;
+            margin-left: auto;
+        }
 
         .text {
             margin: 1cm;
@@ -41,7 +44,6 @@
             margin-left: auto;
             margin-right: auto;
             display: block;
-            padding: 1cm;
         }
     </style>
     <meta charset="utf-8">
@@ -55,18 +57,14 @@
             The Shallow Water equations are used for describing the flow of water when the depth is low
             relative to the wave length. They are derived by integrating the Navier–Stokes equations accros
             the depth. A conservative form of the shallow water equations are shown below, where rho is the density of
-            water
-            and
-            h is the water height.
+            water and h is the water height.
             <div class="img">
                 <img src="equation.png">
             </div>
-            <h1>What Are they</h1>
-            <h1>How Are they Used?</h1>
-
-            The shallow water equations are derived from the derived from Navier stokes equations. What Are they How Do
-            they
-            Work? How Are they Used?
+            <h1>Limitations of the Shallow Water equations</h1>
+            The shallow water's equations are only valid when the wavelength is large relative to the wave depth and
+            there is no flow along the depth axis. This means that the equations can not correctly simulate phenomenon
+            such as cresting waves or currents that vary for depth.
             <h1>
                 Simulation
             </h1>
@@ -78,15 +76,21 @@
             The simulation operates on two steps. In the first step the water velocities are calculated and then the
             water
             velocities are used to change the water heights. The equations used in the simulation are shown below.
+            <h1>
+                Limitations of Model
+            </h1>
+            the model does not incorporate the conservation of momentum as described in the shallow water equations. The
+            model
+            also breaks down under high water velocities because it uses a constant time step.
             <div class="img">
                 <img src="equation2.png">
             </div>
             The first two equations describe the velocity and the last two describe how the velocity is related to the
             height.
         </div>
+        <div class="game_body"><canvas id="canvas" class="game" width="1000" height="1000"></canvas></div>
 
 
-        <canvas id="canvas" class="game" width="1000" height="1000">
 
 
 

@@ -34,7 +34,9 @@ function mouse_move(event) {
     mouse_event.set("x", event.offsetX);
     mouse_event.set("delta_y", event.offsetY - last_y);
     mouse_event.set("y", event.offsetY);
-
+    console.log(event)
+    console.log(event.target)
+    console.log(event.offsetX)
     mouse_event.set("delta_time_ms", Number(now - last_time))
     mouse_event.set("buttons", event.buttons);
     events.push(mouse_event)
