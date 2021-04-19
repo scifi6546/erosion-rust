@@ -21,7 +21,7 @@ impl Model {
         }
     }
     pub fn from_heights(
-        heights: Vec<f32>,
+        heights: &Vec<f32>,
         dimensions: Vector2<usize>,
         transform: Transform,
     ) -> Self {
@@ -48,67 +48,45 @@ impl Model {
                 let triangle1_normal = (x1_y0 - x1_y1).cross(&(x0_y1 - x1_y1)).normalize();
 
                 //triangle 0
-                vertices.push(Vertex {
-                    #[rustfmt::skip]
-                    data:vec![
+                #[rustfmt::skip]
+                vertices.append(
+                    &mut vec![
                         //position:
                         x0_y0.x,x0_y0.y,x0_y0.z,
                         //uv
                         0.0,0.0,
                         //normal
-                        triangle0_normal.x,triangle0_normal.y,triangle0_normal.z
-
-                    ],
-                });
-                vertices.push(Vertex {
-                    #[rustfmt::skip]
-                    data:vec![
+                        triangle0_normal.x,triangle0_normal.y,triangle0_normal.z,
                         //position:
                         x0_y1.x,x0_y1.y,x0_y1.z,
                         //uv
                         0.0,1.0,
                         //normal
-                        triangle0_normal.x,triangle0_normal.y,triangle0_normal.z
+                        triangle0_normal.x,triangle0_normal.y,triangle0_normal.z,
 
-                    ],
-                });
-                vertices.push(Vertex {
-                    #[rustfmt::skip]
-                    data:vec![
                         //position:
                         x1_y0.x,x1_y0.y,x1_y0.z,
                         //uv
                         1.0,0.0,
                         //normal
-                        triangle0_normal.x,triangle0_normal.y,triangle0_normal.z
-                    ],
-                });
+                        triangle0_normal.x,triangle0_normal.y,triangle0_normal.z,
+            
                 //triangle 1
-                vertices.push(Vertex {
-                    #[rustfmt::skip]
-                    data:vec![
+    
                         //position:
                         x0_y1.x,x0_y1.y,x0_y1.z,
                         //uv
                         0.0,1.0,
                         //normal
-                        triangle1_normal.x,triangle1_normal.y,triangle1_normal.z
-                    ],
-                });
-                vertices.push(Vertex {
-                    #[rustfmt::skip]
-                    data:vec![
+                        triangle1_normal.x,triangle1_normal.y,triangle1_normal.z,
+      
                         //position:
                         x1_y1.x,x1_y1.y,x1_y1.z,
                         //uv
                         1.0,1.0,
                         //normal
-                        triangle1_normal.x,triangle1_normal.y,triangle1_normal.z
-                    ],
-                });
-                vertices.push(Vertex {
-                    #[rustfmt::skip]
-                    data:vec![
+                        triangle1_normal.x,triangle1_normal.y,triangle1_normal.z,
+         
                         //position:
                         x1_y0.x,x1_y0.y,x1_y0.z,
                         //uv
@@ -116,15 +94,15 @@ impl Model {
                         //normal
                         triangle1_normal.x,triangle1_normal.y,triangle1_normal.z
                     ],
-                });
+                );
             }
         }
         Model {
             mesh: Mesh {
-                vertices: vertices.iter().map(|v| v.data.clone()).flatten().collect(),
+                vertices: vertices,
                 description: ItemDesc::default_model(),
             },
-            texture: Texture::constant_color(Vector4::new(32, 65, 147, 255), Vector2::new(8, 8)),
+            texture: Texture::constant_color(Vector4::new(32, 65, 147, 255), Vector2::new(2, 2)),
             transform,
         }
     }

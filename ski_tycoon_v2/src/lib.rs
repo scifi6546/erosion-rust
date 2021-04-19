@@ -149,8 +149,8 @@ impl Game {
                         ..
                     } => {
                         if buttons_pressed.contains(&MouseButton::RightClick) {
-                            camera.rotate_phi(delta_x * 0.001 * delta_time_ms);
-                            camera.rotate_theta(delta_y * 0.001 * delta_time_ms);
+                            camera.rotate_phi(delta_x * 0.0001 * delta_time_ms);
+                            camera.rotate_theta(delta_y * 0.0001 * delta_time_ms);
                         }
                     }
                     Event::ScreenSizeChange { new_size } => {
@@ -226,8 +226,8 @@ impl Game {
             let graphics: &mut RenderingContext = &mut self.resources.get_mut().unwrap();
 
             for terrain in <&mut Terrain>::query().iter_mut(&mut self.world) {
-                terrain.draw_gui(&mut self.resources.get_mut().unwrap());
                 terrain.water_simulation();
+
                 let model = terrain.model();
                 asset_manager.overwrite(
                     "game_terrain",

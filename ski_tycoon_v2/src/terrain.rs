@@ -15,8 +15,16 @@ impl Default for TerrainLibrary {
         Self {
             entries: vec![
                 Scenario {
-                    name: "Flat".to_string(),
-                    terrain_ctor: Box::new(|| Terrain::flat(Vector2::new(20, 20), 1.0)),
+                    name: "Big Droplet".to_string(),
+                    terrain_ctor: Box::new(|| {
+                        Terrain::cone_flat(
+                            Vector2::new(100, 100),
+                            Vector2::new(50.0, 50.0),
+                            5.0,
+                            -0.5,
+                            0.0,
+                        )
+                    }),
                 },
                 Scenario {
                     name: "Droplet".to_string(),
@@ -110,12 +118,12 @@ impl TerrainLibrary {
     ) {
         egui::Window::new("How do I use this?").show(context, |ui| {
 
-            ui.label("First click on a scenario to start a simulation.\nScroll to zoom out and use left click+drag to change view.");
+            ui.label("Click on a scenario to start simulation\nScroll to zoom\n Left click+drag to change view");
         });
         egui::Window::new("Scenarios").show(context, |ui| {
             for t in self.entries.iter() {
                 ui.label(t.name.to_string());
-                if ui.button("").clicked {
+                if ui.button("Click Here").clicked {
                     t.build_scenario(world, graphics, asset_manager, bound_shader);
                 }
             }
@@ -137,10 +145,12 @@ pub struct Droplet {
     position: Vector2<usize>,
     height: f32,
 }
+
 impl Terrain {
     const DELTA_T: f32 = 0.01;
-    pub fn draw_gui(&self, context: &mut CtxRef) {}
-    /// Builds cone terrain with centar at center and slope of `slope`
+    const G: f32 = 0.1;
+    const VISC: f32 = 0.0002;
+    /// Builds cone terrain with center at center and slope of `slope`
     pub fn new_cone(
         dimensions: Vector2<usize>,
         center: Vector2<f32>,
@@ -175,7 +185,34 @@ impl Terrain {
             dimensions,
         }
     }
-
+    pub fn cone_flat(
+        dimensions: Vector2<usize>,
+        center: Vector2<f32>,
+        center_height: f32,
+        slope: f32,
+        min_height: f32,
+    ) -> Self {
+        let mut heights = vec![];
+        heights.reserve(dimensions.x * dimensions.y);
+        for x in 0..dimensions.x {
+            for y in 0..dimensions.y {
+                let radius = ((x as f32 - center.x).powi(2) + (y as f32 - center.y).powi(2)).sqrt();
+                let mut height = center_height + radius * slope;
+                if height < min_height {
+                    height = min_height;
+                }
+                heights.push(height);
+            }
+        }
+        Self {
+            heights: Grid::from_vec(heights, dimensions),
+            velocity: Grid::from_vec(
+                vec![Vector2::new(0.0, 0.0); (dimensions.x + 1) * (dimensions.y + 1)],
+                Vector2::new(dimensions.x + 1, dimensions.y + 1),
+            ),
+            dimensions,
+        }
+    }
     pub fn droplet(dimensions: Vector2<usize>, height: f32, droplet: Vec<Droplet>) -> Self {
         let mut heights = vec![height; dimensions.x * dimensions.y];
         for drop in droplet.iter() {
@@ -205,23 +242,19 @@ impl Terrain {
             None
         }
     }
-    fn run_timestep(
+    fn update_velocity(
         heights: &Grid<f32>,
         velocity: &Grid<Vector2<f32>>,
+        velocity_apply: &Grid<Vector2<f32>>,
         dimensions: &Vector2<usize>,
         delta_t: f32,
-    ) -> (Grid<f32>, Grid<Vector2<f32>>) {
+    ) -> Grid<Vector2<f32>> {
+        let mut new_velocities = velocity_apply.clone();
         //Update Velocities
-        let mut new_velocity = velocity.clone();
         for x in 0..dimensions.x {
             for y in 0..dimensions.y {
                 let water_x_n1 = if x > 0 {
                     heights.get_unchecked(Vector2::new(x as i64 - 1, y as i64))
-                } else {
-                    heights.get_unchecked(Vector2::new(x as i64, y as i64))
-                };
-                let water_x_p1 = if x <= dimensions.x - 2 {
-                    heights.get_unchecked(Vector2::new(x as i64 + 1, y as i64))
                 } else {
                     heights.get_unchecked(Vector2::new(x as i64, y as i64))
                 };
@@ -230,88 +263,159 @@ impl Terrain {
                 } else {
                     heights.get_unchecked(Vector2::new(x as i64, y as i64))
                 };
-                let water_y_p1 = if y <= dimensions.y - 2 {
-                    heights.get_unchecked(Vector2::new(x as i64, y as i64 + 1))
+
+                let v = new_velocities.get_mut_unchecked(Vector2::new(x as i64, y as i64));
+                let center = heights.get_unchecked(Vector2::new(x as i64, y as i64));
+                v.x += (water_x_n1 - center) * delta_t * Self::G;
+                v.x -= v.x * Self::VISC;
+                if x == 0 {
+                    v.x = 0.0;
+                }
+                v.y += (water_y_n1 - center) * delta_t * Self::G;
+                v.y -= v.y * Self::VISC;
+                if y == 0 {
+                    v.y = 0.0;
+                }
+            }
+        }
+        return new_velocities;
+    }
+    fn update_water(
+        heights: &Grid<f32>,
+        velocity: &Grid<Vector2<f32>>,
+        heights_apply: &Grid<f32>,
+        dimensions: &Vector2<usize>,
+        delta_t: f32,
+    ) -> Grid<f32> {
+        let mut heights_out = heights_apply.clone();
+        for x in 0..dimensions.x {
+            for y in 0..dimensions.y {
+                let water_yn1 = if y > 0 {
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64 - 1))
+                } else {
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64))
+                };
+                let (water_0, v_y0, u_x0) = (
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64)),
+                    velocity.get_unchecked(Vector2::new(x as i64, y as i64)).y,
+                    velocity.get_unchecked(Vector2::new(x as i64, y as i64)).x,
+                );
+                let (water_y1, v_y1) = if y <= dimensions.y - 2 {
+                    (
+                        heights.get_unchecked(Vector2::new(x as i64, y as i64 + 1)),
+                        velocity
+                            .get_unchecked(Vector2::new(x as i64, y as i64 + 1))
+                            .y,
+                    )
+                } else {
+                    (heights.get_unchecked(Vector2::new(x as i64, y as i64)), 0.0)
+                };
+                let water_xn1 = if x > 0 {
+                    heights.get_unchecked(Vector2::new(x as i64 - 1, y as i64))
+                } else {
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64))
+                };
+                let (water_x1, u_x1) = if x <= dimensions.x - 2 {
+                    (
+                        heights.get_unchecked(Vector2::new(x as i64 + 1, y as i64)),
+                        velocity
+                            .get_unchecked(Vector2::new(x as i64 + 1, y as i64))
+                            .x,
+                    )
+                } else {
+                    (heights.get_unchecked(Vector2::new(x as i64, y as i64)), 0.0)
+                };
+                let water_xn1_avg = (water_xn1 + water_0) / 2.0;
+                let water_x1_avg = (water_x1 + water_0) / 2.0;
+
+                let water_yn1_avg = (water_yn1 + water_0) / 2.0;
+                let water_y1_avg = (water_y1 + water_0) / 2.0;
+                let deltax = (u_x1 * water_x1_avg) - (u_x0 * water_xn1_avg);
+                let deltay = (v_y1 * water_y1_avg) - (v_y0 * water_yn1_avg);
+                *heights_out.get_mut_unchecked(Vector2::new(x as i64, y as i64)) +=
+                    -1.0 * (deltax + deltay) * delta_t;
+            }
+        }
+        return heights_out;
+    }
+    fn run_timestep(
+        heights: &Grid<f32>,
+        velocity: &Grid<Vector2<f32>>,
+        heights_apply: &mut Grid<f32>,
+        velocities_apply: &mut Grid<Vector2<f32>>,
+        dimensions: &Vector2<usize>,
+        delta_t: f32,
+    ) {
+        //Update Velocities
+        for x in 0..dimensions.x {
+            for y in 0..dimensions.y {
+                let water_x_n1 = if x > 0 {
+                    heights.get_unchecked(Vector2::new(x as i64 - 1, y as i64))
+                } else {
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64))
+                };
+                let water_y_n1 = if y > 0 {
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64 - 1))
                 } else {
                     heights.get_unchecked(Vector2::new(x as i64, y as i64))
                 };
 
-                let v = new_velocity.get_mut_unchecked(Vector2::new(x as i64, y as i64));
+                let v = velocities_apply.get_mut_unchecked(Vector2::new(x as i64, y as i64));
                 let center = heights.get_unchecked(Vector2::new(x as i64, y as i64));
-                v.x += (water_x_n1 - center) * delta_t;
-                v.y += (water_y_n1 - center) * delta_t;
+                v.x += (water_x_n1 - center) * delta_t * Self::G;
+                v.y += (water_y_n1 - center) * delta_t * Self::G;
             }
         }
-        let mut new_heights = heights.clone();
+
         //Update Water
 
         for x in 0..dimensions.x {
             for y in 0..dimensions.y {
-                let (water_yn1, v_yn1) = if y > 0 {
-                    (
-                        heights.get_unchecked(Vector2::new(x as i64, y as i64 - 1)),
-                        new_velocity
-                            .get_unchecked(Vector2::new(x as i64, y as i64 - 1))
-                            .y,
-                    )
+                let water_yn1 = if y > 0 {
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64 - 1))
                 } else {
-                    (
-                        heights.get_unchecked(Vector2::new(x as i64, y as i64)),
-                        new_velocity
-                            .get_unchecked(Vector2::new(x as i64, y as i64))
-                            .y,
-                    )
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64))
                 };
                 let (water_0, v_y0, u_x0) = (
                     heights.get_unchecked(Vector2::new(x as i64, y as i64)),
-                    new_velocity
+                    velocities_apply
                         .get_unchecked(Vector2::new(x as i64, y as i64))
                         .y,
-                    new_velocity
+                    velocities_apply
                         .get_unchecked(Vector2::new(x as i64, y as i64))
                         .x,
                 );
                 let (water_y1, v_y1) = if y <= dimensions.y - 2 {
                     (
                         heights.get_unchecked(Vector2::new(x as i64, y as i64 + 1)),
-                        new_velocity
+                        velocities_apply
                             .get_unchecked(Vector2::new(x as i64, y as i64 + 1))
                             .y,
                     )
                 } else {
                     (
                         heights.get_unchecked(Vector2::new(x as i64, y as i64)),
-                        new_velocity
+                        velocities_apply
                             .get_unchecked(Vector2::new(x as i64, y as i64))
                             .y,
                     )
                 };
-                let (water_xn1, u_xn1) = if x > 0 {
-                    (
-                        heights.get_unchecked(Vector2::new(x as i64 - 1, y as i64)),
-                        new_velocity
-                            .get_unchecked(Vector2::new(x as i64 - 1, y as i64))
-                            .x,
-                    )
+                let water_xn1 = if x > 0 {
+                    heights.get_unchecked(Vector2::new(x as i64 - 1, y as i64))
                 } else {
-                    (
-                        heights.get_unchecked(Vector2::new(x as i64, y as i64)),
-                        new_velocity
-                            .get_unchecked(Vector2::new(x as i64, y as i64))
-                            .x,
-                    )
+                    heights.get_unchecked(Vector2::new(x as i64, y as i64))
                 };
                 let (water_x1, u_x1) = if x <= dimensions.x - 2 {
                     (
                         heights.get_unchecked(Vector2::new(x as i64 + 1, y as i64)),
-                        new_velocity
+                        velocities_apply
                             .get_unchecked(Vector2::new(x as i64 + 1, y as i64))
                             .x,
                     )
                 } else {
                     (
                         heights.get_unchecked(Vector2::new(x as i64, y as i64)),
-                        new_velocity
+                        velocities_apply
                             .get_unchecked(Vector2::new(x as i64, y as i64))
                             .x,
                     )
@@ -321,26 +425,46 @@ impl Terrain {
 
                 let water_yn1_avg = (water_yn1 + water_0) / 2.0;
                 let water_y1_avg = (water_y1 + water_0) / 2.0;
-                let deltax = (u_x0 * water_xn1_avg) - (u_x1 * water_x1_avg);
-                let deltay = (v_y0 * water_yn1_avg) - (v_y1 * water_y1_avg);
-                *new_heights.get_mut_unchecked(Vector2::new(x as i64, y as i64)) +=
-                    (deltax + deltay) * delta_t;
+                let deltax = (u_x1 * water_x1_avg) - (u_x0 * water_xn1_avg);
+                let deltay = (v_y1 * water_y1_avg) - (v_y0 * water_yn1_avg);
+                *heights_apply.get_mut_unchecked(Vector2::new(x as i64, y as i64)) +=
+                    -1.0 * (deltax + deltay) * delta_t;
             }
         }
-        (new_heights, new_velocity)
     }
     pub fn water_simulation(&mut self) {
         //Update Velocities
-        let (h_half, v_half) = Self::run_timestep(
-            &mut self.heights,
-            &mut self.velocity,
-            &self.dimensions,
-            Self::DELTA_T / 2.0,
-        );
+        for _ in 0..20 {
+            let half_uv = Self::update_velocity(
+                &self.heights,
+                &self.velocity,
+                &self.velocity,
+                &self.dimensions,
+                Self::DELTA_T,
+            );
+            let half_h = Self::update_water(
+                &self.heights,
+                &self.velocity,
+                &self.heights,
+                &self.dimensions,
+                Self::DELTA_T,
+            );
 
-        let (h, v) = Self::run_timestep(&h_half, &v_half, &self.dimensions, Self::DELTA_T);
-        self.heights = h;
-        self.velocity = v;
+            self.velocity = Self::update_velocity(
+                &half_h,
+                &half_uv,
+                &self.velocity,
+                &self.dimensions,
+                Self::DELTA_T,
+            );
+            self.heights = Self::update_water(
+                &half_h,
+                &half_uv,
+                &self.heights,
+                &self.dimensions,
+                Self::DELTA_T,
+            );
+        }
     }
     pub fn from_tiles(heights: Vec<f32>, dimensions: Vector2<usize>) -> Self {
         Self {
@@ -354,8 +478,7 @@ impl Terrain {
     }
 
     pub fn model(&self) -> Model {
-        let heights = self.heights.data.iter().copied().collect();
-        Model::from_heights(heights, self.dimensions, Transform::default())
+        Model::from_heights(&self.heights.data, self.dimensions, Transform::default())
     }
     pub fn get_transform_rounded(&self, coordinate: &Vector2<f32>) -> Vector3<f32> {
         let x: i64 = unsafe { coordinate.x.to_int_unchecked() };
