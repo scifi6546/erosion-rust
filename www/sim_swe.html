@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        html,
+        body {
+            display: flex;
+            justify-content: center;
+            background-color: #b9b9b9;
+            font-family: 'Helvetica';
+        }
+
+        .game_body {
+            display: block;
+            margin-left: auto;
+        }
+
+        .text {
+            margin: 1cm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+
+
+
+
+        .document {
+            width: 30cm;
+            background-color: #f7f7f7;
+            box-shadow: 0px 0px 10px;
+        }
+
+        img {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            padding: 1cm;
+        }
+
+        canvas {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            box-shadow: 0px 0px 10px;
+        }
+
+        .topnav {
+            display: flex;
+            flex-direction: row;
+            background-color: #5582a7;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .link {
+            background-color: #a1c2df;
+            padding: 0.5cm;
+        }
+
+        .link:hover {
+            background-color: #8f8f8f;
+        }
+    </style>
+    <meta charset="utf-8">
+    <title>Shallow Water Equations</title>
+</head>
+
+<body>
+    <div class="document">
+        <div class="topnav">
+            <a class="link" href="index.html">Model Demo</a>
+            <a class="link" href="sim.html">Introduction</a>
+            <a class="link" href="model.html"> Shallow Water Equations</a>
+            <a class="link" href="sim_swe.html"> Model Description</a>
+            <a class="link" href="ref.html"> References</a>
+
+        </div>
+        <div class="text">
+
+            <h1>
+                Simulation
+            </h1>
+            Shown below is a real time simulation of the shallow water equations. The model does not preserve momentum,
+            thus the equations used and shown below are simplified.
+            <div class="img">
+                <img src="equation2.png">
+            </div>
+            The simulation uses the Arakawa scheme [1] and is shown below. The velocities are offset from the height
+            grid in
+            order to
+            represent flow between height cells. If the velocity components were not offset then the water velocities
+            would represent net flux of water at a given point rather then the velocity of water between two points.
+            <div class="img">
+                <img src="scheme.png" width="600px">
+            </div>
+            The equations used in the water simulation are shown below. Equations (1,2) are used first and they define
+            the velocities of the water. Equation (3) uses the velocities calculated in equations (1,2) to calculate the
+            change in height. Equations (4,5) define the half indicies used in equation (3).
+
+            <div class="img">
+                <img src="equation3.png">
+                <!--
+                   \frac{\partial u_{i,j}}{\partial t} = -\frac{h_{i+1,j}-h_{i,j}}{\Delta x}\quad(1),\\
+\frac{\partial v_{i,j}}{\partial t} = -\frac{h_{i,j+1}-h_{i,j}}{\Delta y}\quad(2),\\
+\frac{\partial h_{i,j}}{\partial t} = -\frac{h_{i+\frac{1}{2},j}u_{i,j}-h_{i-\frac{1}{2},j}u_{i-1,j}}{\Delta x}
+-\frac{h_{i,j+\frac{1}{2}}u_{i,j}-h_{i,j-\frac{1}{2}}u_{i,j-1}}{\Delta x}\quad(3),\\
+h_{i+\frac{1}{2},j} = \frac{\left(h_{i+1,j}+h_{i,j}\right)}{2}\quad(4),\\
+h_{i,j+\frac{1}{2}} = \frac{\left(h_{i,j+1}+h_{i,j}\right)}{2}\quad(5),\\
+                -->
+            </div>
+            <h1>Time Stepping Scheme</h1>
+            The simulation uses the Matsuno time steping scheme. The Matsuno is used rather then an explicit time step
+            because it results in a more stable simulation. If an explicit time step was used then the model can
+            overshot the correct results leading to instability. A time step is represented as,
+            <div class="img">
+                <img src="equation4.png">
+                <!--
+\frac{dX}{dt} = F(x)
+                -->
+            </div>
+            First A half time step is taken as shown below,
+            <div class="img">
+                <img src="equation5.png">
+                <!--
+X^{n+\frac{1}{2}} = X^n+\frac{\Delta t}{2} F\left(X^n\right)
+                -->
+            </div>
+            Next a full time step is taken using the information generated from the half time step.
+            <div class="img">
+                <img src="equation6.png">
+                <!--
+X^{n+1} = X^n+\frac{\Delta t}{2} F\left(X^{n+1/2}\right)
+            -->
+            </div>
+
+            <h1>
+                Limitations of Model
+            </h1>
+            The model inherits the limitations form the shallow water equations as discussed in the Shallow Water
+            Equations Section. The model is also unstable under high time steps which could be explained by the
+            simulation overshooting the correct result when simulating a timestep.
+
+
+        </div>
+
+    </div>
+</body>
+
+</html>
