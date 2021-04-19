@@ -43,12 +43,21 @@ impl DeltaCamera {
             next.radius = 0.1;
         }
     }
+    pub fn set_radius(&mut self, radius: f32) {
+        self.new_next();
+        let mut next = self.next.as_mut().unwrap();
+        next.radius = radius;
+    }
     pub fn get_radius(&self) -> f32 {
         self.previous.radius
     }
     pub fn translate(&mut self, translation: &Vector3<f32>) {
         self.new_next();
         self.next.as_mut().unwrap().origin += translation;
+    }
+    pub fn set_translation(&mut self, translation: Vector3<f32>) {
+        self.new_next();
+        self.next.as_mut().unwrap().origin = translation;
     }
     /// applies delta changes to self
     pub fn apply(&mut self, world: &World) {

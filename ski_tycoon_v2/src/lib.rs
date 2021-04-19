@@ -125,7 +125,15 @@ impl Game {
         resources.insert(egui_context);
         resources.insert(egui_adaptor);
         resources.insert(model_manager);
-        resources.insert(terrain::TerrainLibrary::default());
+        let terrain_library = terrain::TerrainLibrary::default();
+        terrain_library.entries[0].build_scenario(
+            &mut world,
+            &mut resources.get_mut().unwrap(),
+            &mut resources.get_mut().unwrap(),
+            &mut resources.get_mut().unwrap(),
+            &mut resources.get_mut().unwrap(),
+        );
+        resources.insert(terrain_library);
         // gui::insert_ui(&mut egui_context);
         let g = Game {
             world,
@@ -240,6 +248,7 @@ impl Game {
             let library: &terrain::TerrainLibrary = &self.resources.get().unwrap();
             library.draw_gui(
                 &mut self.world,
+                &mut self.resources.get_mut().unwrap(),
                 &mut self.resources.get_mut().unwrap(),
                 &mut self.resources.get_mut().unwrap(),
                 &mut self.resources.get_mut().unwrap(),

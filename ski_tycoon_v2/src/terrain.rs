@@ -1,31 +1,20 @@
 use super::prelude::{
-    insert_terrain, AssetManager, Grid, Model, RenderingContext, RuntimeModel, ShaderBind,
-    Transform,
+    insert_terrain, AssetManager, DeltaCamera, Grid, Model, RenderingContext, RuntimeModel,
+    ShaderBind, Transform,
 };
 use egui::CtxRef;
-use legion::World;
+
+use legion::*;
 use log::{error, info};
 use nalgebra::{Vector2, Vector3};
 mod pgm_parser;
 pub struct TerrainLibrary {
-    entries: Vec<Scenario>,
+    pub entries: Vec<Scenario>,
 }
 impl Default for TerrainLibrary {
     fn default() -> Self {
         Self {
             entries: vec![
-                Scenario {
-                    name: "Big Droplet".to_string(),
-                    terrain_ctor: Box::new(|| {
-                        Terrain::cone_flat(
-                            Vector2::new(100, 100),
-                            Vector2::new(50.0, 50.0),
-                            5.0,
-                            -0.5,
-                            0.0,
-                        )
-                    }),
-                },
                 Scenario {
                     name: "Droplet".to_string(),
                     terrain_ctor: Box::new(|| {
@@ -36,6 +25,18 @@ impl Default for TerrainLibrary {
                                 position: Vector2::new(10, 10),
                                 height: 6.0,
                             }],
+                        )
+                    }),
+                },
+                Scenario {
+                    name: "Big Droplet".to_string(),
+                    terrain_ctor: Box::new(|| {
+                        Terrain::cone_flat(
+                            Vector2::new(100, 100),
+                            Vector2::new(50.0, 50.0),
+                            5.0,
+                            -0.5,
+                            0.0,
                         )
                     }),
                 },
@@ -90,15 +91,23 @@ impl Scenario {
     pub fn build_scenario(
         &self,
         world: &mut World,
+        camera: &mut DeltaCamera,
         graphics: &mut RenderingContext,
         asset_manager: &mut AssetManager<RuntimeModel>,
         bound_shader: &ShaderBind,
     ) {
         world.clear();
         info!("building scene: {}", self.name);
+        let terrain = (self.terrain_ctor)();
 
+        camera.set_translation(Vector3::new(
+            terrain.dimensions.x as f32 / 2.0,
+            0.0,
+            terrain.dimensions.y as f32 / 2.0,
+        ));
+        camera.set_radius((terrain.dimensions.x as f32 * terrain.dimensions.y as f32).sqrt());
         insert_terrain(
-            (self.terrain_ctor)(),
+            terrain,
             world,
             graphics,
             asset_manager,
@@ -111,6 +120,7 @@ impl TerrainLibrary {
     pub fn draw_gui(
         &self,
         world: &mut World,
+        camera: &mut DeltaCamera,
         context: &mut CtxRef,
         graphics: &mut RenderingContext,
         asset_manager: &mut AssetManager<RuntimeModel>,
@@ -124,7 +134,7 @@ impl TerrainLibrary {
             for t in self.entries.iter() {
                 ui.label(t.name.to_string());
                 if ui.button("Click Here").clicked {
-                    t.build_scenario(world, graphics, asset_manager, bound_shader);
+                    t.build_scenario(world, camera, graphics, asset_manager, bound_shader);
                 }
             }
         });
