@@ -1,4 +1,4 @@
-import * as rust from "rust";
+
 document.onreadystatechange = () => {
     console.log("changed");
     if (document.readyState === 'complete') {

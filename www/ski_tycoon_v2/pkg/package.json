@@ -1,0 +1,15 @@
+{
+  "name": "ski_tycoon_v2",
+  "collaborators": [
+    "Nicholas Alexeev <nickalexeev@protonmail.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "ski_tycoon_v2_bg.wasm",
+    "ski_tycoon_v2.js",
+    "ski_tycoon_v2.d.ts"
+  ],
+  "module": "ski_tycoon_v2.js",
+  "types": "ski_tycoon_v2.d.ts",
+  "sideEffects": false
+}

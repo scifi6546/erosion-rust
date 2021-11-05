@@ -9,7 +9,7 @@ module.exports = {
   },
   mode: "development",
   plugins: [
-    new CopyWebpackPlugin(['index.html']),
-    new CopyWebpackPlugin(['*'])
+    new CopyWebpackPlugin(['*']),
+    new CopyWebpackPlugin(['../ski_tycoon_v2/pkg/*'])
   ],
 };
